@@ -57,6 +57,7 @@ def run():
                 "prediction_label": result["prediction_label"],
                 "prediction_score": result["prediction_score"],
                 "ip_permission": st.session_state.get("ip_permission_given", None),
+                "user_ip": st.session_state.get("user_ip"),  # Stored silently, NOT shown
             }
             inserted_id = save_report(report_data)
             st.session_state.report_submitted = True
