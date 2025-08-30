@@ -1,4 +1,5 @@
 import re
+from typing import List, Tuple
 from PIL import Image, ImageEnhance, ImageFilter
 import pytesseract
 
@@ -31,14 +32,36 @@ def extract_text(image_path):
     text = pytesseract.image_to_string(processed_img, config=custom_config)
     return text
 
-def parse_contact_info(text):
+def parse_contact_info(text: str) -> Tuple[List[str], List[str]]:
     """
-    Extract email addresses and phone numbers from text using regex.
+    Extract emails and phone numbers from text.
     """
-    email_pattern = r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+'
-    phone_pattern = r'\+?\d[\d \-\(\)]{7,}\d'
+    email_pattern = re.compile(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+")
+    phone_pattern = re.compile(r"\+?\d[\d -]{8,}\d")
 
-    emails = re.findall(email_pattern, text)
-    phones = re.findall(phone_pattern, text)
+    emails = email_pattern.findall(text)
+    phones = phone_pattern.findall(text)
+    return emails, phones
 
-    return list(set(emails)), list(set(phones))
+def extract_urls(text: str) -> List[str]:
+    """
+    Extract URLs from text using regex.
+    """
+    url_pattern = re.compile(r"(https?://[^\s]+)|(www\.[^\s]+)", re.IGNORECASE)
+    matches = url_pattern.findall(text)
+    urls = [u for tup in matches for u in tup if u]
+    return urls
+
+def extract_text_and_links(image_file):
+    """
+    Full pipeline extraction combining OCR text, contacts, and URLs.
+    """
+    text = extract_text(image_file)
+    emails, phones = parse_contact_info(text)
+    urls = extract_urls(text)
+    return {
+        "extracted_text": text,
+        "parsed_sender_emails": emails,
+        "parsed_sender_phones": phones,
+        "extracted_urls": urls,
+    }
