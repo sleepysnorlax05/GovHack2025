@@ -37,7 +37,7 @@ def predict_phishing(text):
         The text is truncated to the first 512 characters to fit model input constraints.
     """
 
-    result = query_hf_api(text[:512])
+    result = query_hf_api(text[:2048])
     predictions = result[0]
     best_pred = max(predictions, key=lambda x: x['score'])
     label = best_pred['label']
