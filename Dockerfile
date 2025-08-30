@@ -4,6 +4,12 @@ FROM python:3.13-slim
 # Set working directory inside container
 WORKDIR /.
 
+# Install tesseract-ocr and other dependencies
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    libgl1-mesa-glx \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy dependency files first for caching
 COPY requirements.txt .
 
