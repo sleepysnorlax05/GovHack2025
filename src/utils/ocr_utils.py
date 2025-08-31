@@ -53,15 +53,13 @@ def extract_urls(text: str) -> List[str]:
     return urls
 
 def extract_text_and_links(image_file):
-    """
-    Full pipeline extraction combining OCR text, contacts, and URLs.
-    """
     text = extract_text(image_file)
     emails, phones = parse_contact_info(text)
     urls = extract_urls(text)
     return {
         "extracted_text": text,
-        "parsed_sender_emails": emails,
-        "parsed_sender_phones": phones,
-        "extracted_urls": urls,
+        "sender_emails": emails,     # Only sender emails from image/text
+        "sender_phones": phones,
+        "extracted_urls": urls       # Only URLs from image/text
     }
+
