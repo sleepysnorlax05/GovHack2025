@@ -78,9 +78,6 @@ def run():
     )
     st.session_state.modified_sender_contact = sender_contact
 
-    st.subheader("Your Contact Information")
-    st.write(st.session_state.user_name)
-    st.write(st.session_state.user_emails)
 
     # Check sender domains against URLhaus
     malicious_domains = check_sender_domains(result["parsed_sender_emails"])
