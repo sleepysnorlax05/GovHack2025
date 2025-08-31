@@ -1,7 +1,10 @@
 import streamlit as st
 
 def run():
-    st.title("Thank You For Submitting Your Report!")
+    st.markdown(
+        "<h1 style='font-size:2.2rem;margin-bottom:0.1em;'>PhishSlayer &ndash; Thank You!</h1>",
+        unsafe_allow_html=True)
+    st.markdown("<hr>", unsafe_allow_html=True)
     st.success("Your contribution is vital in the fight against fraud and scams.")
 
     st.subheader("Impact So Far:")
@@ -16,11 +19,9 @@ def run():
     )
 
     st.subheader("Report Distribution Map")
-    # Replace with real map visualization when available
-    st.image("https://upload.wikimedia.org/wikipedia/commons/0/07/Australia_location_map_with_states_and_territories.png", caption="Map of Reported Scams by Region")
+    st.image("src/resources/map.png", use_container_width=True)
 
     if st.button("Return to Homepage"):
-        # Reset session state except IP permission for better UX
         keys_to_keep = ("ip_permission_given",)
         for key in list(st.session_state.keys()):
             if key not in keys_to_keep:
