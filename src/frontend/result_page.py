@@ -49,9 +49,12 @@ def parse_sender_contacts(text):
     return emails, phones
 
 def run():
-    st.title("Analysis Results")
+    st.markdown(
+        "<h1 style='font-size:2.2rem;margin-bottom:0.1em;'>PhishSlayer &ndash; Analysis Results</h1>",
+        unsafe_allow_html=True)
+    st.markdown("<hr>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#999;'>Review your submission and see scam detection insights below.</p>", unsafe_allow_html=True)
 
-    # Redirect handling: if redirect flag set, go to thank you page
     if st.session_state.get("redirect_to_thank_you", False):
         st.session_state["redirect_to_thank_you"] = False
         st.session_state.page = "thank_you"
@@ -66,19 +69,17 @@ def run():
 
     label_map = {"LABEL_0": "Not Scam", "LABEL_1": "Scam"}
     label_text = label_map.get(result["prediction_label"], "Unknown")
-
-    st.subheader("Prediction")
-    st.write(f"**{label_text}** (Confidence: {result['prediction_score']:.2f})")
+    st.metric("Prediction", f"{label_text} ({result['prediction_score']:.2f})")
 
     st.subheader("Extracted Text")
-    st.text_area("OCR Text", result["extracted_text"], height=300, disabled=True)
+    st.text_area("OCR Text", result["extracted_text"], height=200, disabled=True)
 
     st.subheader("Sender Contact Information")
     sender_contacts_default = ", ".join(result["sender_emails"] + result["sender_phones"])
     modified_sender_contacts = st.text_area(
         "Sender emails / phone numbers found in image/text (please verify or modify):",
         value=sender_contacts_default,
-        height=80,
+        height=60,
     )
     st.session_state.modified_sender_contacts = modified_sender_contacts
 
@@ -87,7 +88,7 @@ def run():
     modified_urls = st.text_area(
         "URLs found in image/text (please verify or modify):",
         value=urls_default,
-        height=80,
+        height=60,
     )
     st.session_state.modified_extracted_urls = modified_urls
 
@@ -110,6 +111,7 @@ def run():
     else:
         st.info("No extracted URLs matched known scam reports.")
 
+    st.markdown("---")
     if not st.session_state.get("report_submitted", False):
         if st.button("Submit Report"):
             report_data = {
@@ -126,7 +128,6 @@ def run():
             inserted_id = save_report(report_data)
             st.session_state.report_submitted = True
             st.session_state.inserted_report_id = inserted_id
-            # Set redirect flag
             st.session_state["redirect_to_thank_you"] = True
             st.rerun()
     else:
