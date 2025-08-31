@@ -1,20 +1,34 @@
+version: "3.8"
+
 services:
   mongodb:
     image: mongo
-    container_name: xphish_mongodb
+    container_name: phishslayer_mongodb
     restart: always
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
 
-  app:
-    image: xphish-vision-demo
-    build: .
+  ollama:
+    image: ollama/ollama:latest
+    container_name: phishslayer_ollama
+    restart: always
     ports:
-      - "8501:8501"
+      - "11434:11434"         # Ollama server port exposed
+    volumes:
+      - ./models:/app/models  # Your local Ollama models mapped here
+    command: ["ollama", "serve"]
+
+  app:
+    build: .
+    container_name: phishslayer_app
+    restart: always
+    ports:
+      - "8501:8501"            # Streamlit app port
     depends_on:
       - mongodb
+      - ollama
     env_file:
       - .env
 

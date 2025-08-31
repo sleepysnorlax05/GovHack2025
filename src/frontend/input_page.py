@@ -1,7 +1,7 @@
 import streamlit as st
 
 def run():
-    st.title("XPhish Vision - Report Submission")
+    st.title("PhishSlayer - Report Submission")
     user_name = st.text_input("Your Name")
     user_emails = st.text_area("Your Emails / Phone Numbers (comma separated)")
     uploaded_file = st.file_uploader("Upload Screenshot", type=["png", "jpg", "jpeg"])

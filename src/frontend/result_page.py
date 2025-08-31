@@ -6,22 +6,12 @@ from src.data.mongodb import save_report
 from src.utils.urlhaus import check_domain_urlhaus, check_url_urlhaus
 
 def run_full_pipeline(image_file):
-    """
-    Run OCR extraction, contact and URL parsing, and phishing prediction.
-    """
     extraction = extract_text_and_links(image_file)
     text = extraction["extracted_text"]
-    emails = extraction["parsed_sender_emails"]
-    phones = extraction["parsed_sender_phones"]
-    urls = extraction["extracted_urls"]
-
     label, score = predict_phishing(text)
     extraction.update({
         "prediction_label": label,
         "prediction_score": score,
-        "extracted_urls": urls,
-        "parsed_sender_emails": emails,
-        "parsed_sender_phones": phones,
     })
     return extraction
 
@@ -50,8 +40,22 @@ def check_extracted_urls(urls):
             malicious_urls[url] = details
     return malicious_urls
 
+def parse_sender_contacts(text):
+    items = [x.strip() for x in text.split(",") if x.strip()]
+    email_pattern = re.compile(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+")
+    phone_pattern = re.compile(r"\+?\d[\d -]{8,}\d")
+    emails = [i for i in items if email_pattern.fullmatch(i)]
+    phones = [i for i in items if phone_pattern.fullmatch(i)]
+    return emails, phones
+
 def run():
     st.title("Analysis Results")
+
+    # Redirect handling: if redirect flag set, go to thank you page
+    if st.session_state.get("redirect_to_thank_you", False):
+        st.session_state["redirect_to_thank_you"] = False
+        st.session_state.page = "thank_you"
+        st.rerun()
 
     if "pipeline_result" not in st.session_state:
         with st.spinner("Analyzing submission..."):
@@ -70,51 +74,58 @@ def run():
     st.text_area("OCR Text", result["extracted_text"], height=300, disabled=True)
 
     st.subheader("Sender Contact Information")
-    initial_sender = ", ".join(result["parsed_sender_emails"] + result["parsed_sender_phones"])
-    sender_contact = st.text_area(
-        "Sender Emails / Phone Numbers (please verify or modify):",
-        value=initial_sender,
+    sender_contacts_default = ", ".join(result["sender_emails"] + result["sender_phones"])
+    modified_sender_contacts = st.text_area(
+        "Sender emails / phone numbers found in image/text (please verify or modify):",
+        value=sender_contacts_default,
         height=80,
     )
-    st.session_state.modified_sender_contact = sender_contact
+    st.session_state.modified_sender_contacts = modified_sender_contacts
+
+    st.subheader("Extracted URLs")
+    urls_default = ", ".join(result["extracted_urls"])
+    modified_urls = st.text_area(
+        "URLs found in image/text (please verify or modify):",
+        value=urls_default,
+        height=80,
+    )
+    st.session_state.modified_extracted_urls = modified_urls
 
 
-    # Check sender domains against URLhaus
-    malicious_domains = check_sender_domains(result["parsed_sender_emails"])
+    malicious_domains = check_sender_domains(emails)
     if malicious_domains:
-        st.warning("⚠️ The following sender domains have been reported in scam databases:")
-        for domain in malicious_domains.keys():
-            st.write(f"- {domain}")
+        st.warning("⚠️ These sender email domains were reported in scam databases:")
+        for d in malicious_domains.keys():
+            st.write(f"- {d}")
     else:
-        st.info("Sender domains were not found in the scam URLhaus database.")
+        st.info("No sender email domains found in URLhaus scam database.")
 
-    # Check extracted URLs against URLhaus
-    malicious_urls = check_extracted_urls(result["extracted_urls"])
+    malicious_urls = check_extracted_urls(url_list)
     if malicious_urls:
-        st.warning("⚠️ The following URLs found in the submission have been reported in scam databases:")
+        st.warning("⚠️ These URLs found in the image/text were reported in scam databases:")
         for url in malicious_urls.keys():
             st.write(f"- {url}")
     else:
-        st.info("No URLs in the submission matched known scam reports.")
+        st.info("No extracted URLs matched known scam reports.")
 
-    if "report_submitted" not in st.session_state:
+    if not st.session_state.get("report_submitted", False):
         if st.button("Submit Report"):
             report_data = {
                 "user_name": st.session_state.user_name,
                 "user_contact": st.session_state.user_emails,
-                "sender_contact": st.session_state.modified_sender_contact,
+                "sender_contacts": modified_sender_contacts,
+                "extracted_urls": modified_urls,
                 "extracted_text": result["extracted_text"],
                 "prediction_label": result["prediction_label"],
                 "prediction_score": result["prediction_score"],
                 "ip_permission": st.session_state.get("ip_permission_given", None),
-                "user_ip": st.session_state.get("user_ip"),  # stored silently
+                "user_ip": st.session_state.get("user_ip"),
             }
             inserted_id = save_report(report_data)
             st.session_state.report_submitted = True
             st.session_state.inserted_report_id = inserted_id
-            st.session_state.page = "thank_you"
+            # Set redirect flag
+            st.session_state["redirect_to_thank_you"] = True
             st.rerun()
     else:
-        st.success("Report submitted successfully!")
-        st.session_state.page = "thank_you"
-        st.rerun()
+        st.success("Report submitted! Redirecting to thank you page...")
