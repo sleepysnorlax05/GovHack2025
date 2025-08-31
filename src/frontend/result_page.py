@@ -91,6 +91,8 @@ def run():
     )
     st.session_state.modified_extracted_urls = modified_urls
 
+    emails, phones = parse_sender_contacts(modified_sender_contacts)
+    url_list = [u.strip() for u in modified_urls.split(",") if u.strip()]
 
     malicious_domains = check_sender_domains(emails)
     if malicious_domains:
